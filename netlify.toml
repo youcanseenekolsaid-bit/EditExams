@@ -1,0 +1,15 @@
+# Netlify Configuration
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[[redirects]]
+  from = "/.well-known/assetlinks.json"
+  to = "/.well-known/assetlinks.json"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
