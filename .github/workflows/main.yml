@@ -24,13 +24,13 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
 
-      - name: Set up JDK 17
+      - name: Set up JDK 21 # تم التحديث هنا
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '21'
           distribution: 'temurin'
 
-      - name: Give Gradlew Permissions # خطوة حل المشكلة
+      - name: Give Gradlew Permissions
         run: chmod +x android/gradlew
 
       - name: Build APK
