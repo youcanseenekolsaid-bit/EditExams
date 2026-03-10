@@ -2,7 +2,7 @@ name: Build Android APK
 on:
   push:
     branches: [ main ]
-  workflow_dispatch: # يتيح لك تشغيل البناء يدوياً أيضاً
+  workflow_dispatch:
 
 jobs:
   build:
@@ -29,6 +29,9 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
+
+      - name: Give Gradlew Permissions # خطوة حل المشكلة
+        run: chmod +x android/gradlew
 
       - name: Build APK
         working-directory: android
