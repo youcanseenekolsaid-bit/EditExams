@@ -118,17 +118,19 @@ export function Home({ onSelectMath, onEditDocument }: { onSelectMath: () => voi
 
   return (
     <div className="flex-1 flex flex-col bg-gray-50 h-full overflow-y-auto">
-      <div className="bg-indigo-600 px-6 pt-16 pb-8 rounded-b-[40px] shadow-lg shrink-0">
-        <div className="flex justify-center mb-4">
-          <div className="bg-white/20 p-4 rounded-2xl backdrop-blur-sm">
-            <FileText size={48} className="text-white" />
+      <div className="bg-indigo-600 px-6 pt-16 pb-8 md:pt-24 md:pb-16 rounded-b-[40px] md:rounded-b-[80px] shadow-lg shrink-0">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex justify-center mb-4 md:mb-8">
+            <div className="bg-white/20 p-4 md:p-6 rounded-2xl md:rounded-3xl backdrop-blur-sm">
+              <FileText className="text-white w-12 h-12 md:w-20 md:h-20" />
+            </div>
           </div>
+          <h1 className="text-3xl md:text-5xl font-extrabold text-white text-center mb-2 md:mb-4">مصمم أوراق العمل</h1>
+          <p className="text-indigo-100 text-center text-sm md:text-lg">صمم امتحاناتك وأوراق عملك بسهولة من هاتفك أو حاسوبك</p>
         </div>
-        <h1 className="text-3xl font-extrabold text-white text-center mb-2">مصمم أوراق العمل</h1>
-        <p className="text-indigo-100 text-center text-sm">صمم امتحاناتك وأوراق عملك بسهولة من هاتفك</p>
       </div>
 
-      <div className="p-6 flex-1 mt-4">
+      <div className="p-6 md:p-10 flex-1 mt-4 max-w-4xl mx-auto w-full">
         {/* AI Generation Button */}
         <button 
           onClick={() => setIsAIModalOpen(true)}
@@ -151,7 +153,7 @@ export function Home({ onSelectMath, onEditDocument }: { onSelectMath: () => voi
 
         <h2 className="text-lg font-bold text-gray-800 mb-4">أو ابدأ من الصفر:</h2>
         
-        <div className="space-y-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
           <button 
             onClick={onSelectMath}
             className="w-full bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center gap-5 hover:border-indigo-300 hover:shadow-md transition-all active:scale-[0.98]"
@@ -182,9 +184,9 @@ export function Home({ onSelectMath, onEditDocument }: { onSelectMath: () => voi
         {savedDocs.length > 0 && (
           <div>
             <h2 className="text-lg font-bold text-gray-800 mb-4">الأعمال المحفوظة:</h2>
-            <div className="space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {savedDocs.map(doc => (
-                <div key={doc.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+                <div key={doc.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between hover:shadow-md transition-shadow">
                   <div className="flex-1 text-right ml-4 cursor-pointer" onClick={() => onEditDocument(doc.id)}>
                     <h3 className="font-bold text-gray-800">{doc.title || 'ورقة عمل بدون عنوان'}</h3>
                     <p className="text-xs text-gray-500">{new Date(doc.updatedAt).toLocaleDateString('ar-SA')}</p>

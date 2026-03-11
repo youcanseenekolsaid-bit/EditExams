@@ -92,6 +92,59 @@ export function MathEditor({ onBack, documentId }: { onBack: () => void, documen
   const isUndoRedoAction = useRef(false);
   const [historyIndexState, setHistoryIndexState] = useState(0);
 
+  const globalZoomRef = useRef(globalZoom);
+  useEffect(() => {
+    globalZoomRef.current = globalZoom;
+  }, [globalZoom]);
+
+  const touchStartDist = useRef<number | null>(null);
+  const initialZoom = useRef<number>(1);
+
+  useEffect(() => {
+    const canvas = document.getElementById('canvas-area');
+    if (!canvas) return;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        const dist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        touchStartDist.current = dist;
+        initialZoom.current = globalZoomRef.current;
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 2 && touchStartDist.current !== null) {
+        e.preventDefault(); // Prevent native zoom/scroll
+        const dist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        const scale = dist / touchStartDist.current;
+        const newZoom = Math.max(0.5, Math.min(3, initialZoom.current * scale));
+        setGlobalZoom(newZoom);
+      }
+    };
+
+    const handleTouchEnd = () => {
+      touchStartDist.current = null;
+    };
+
+    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+    canvas.addEventListener('touchend', handleTouchEnd);
+    canvas.addEventListener('touchcancel', handleTouchEnd);
+
+    return () => {
+      canvas.removeEventListener('touchstart', handleTouchStart);
+      canvas.removeEventListener('touchmove', handleTouchMove);
+      canvas.removeEventListener('touchend', handleTouchEnd);
+      canvas.removeEventListener('touchcancel', handleTouchEnd);
+    };
+  }, []);
+
   useEffect(() => {
     // Auto-save for current session recovery
     const saveTimeout = setTimeout(() => {
@@ -494,10 +547,11 @@ export function MathEditor({ onBack, documentId }: { onBack: () => void, documen
 
       {/* Canvas Area (Multiple Pages) */}
       <div 
-        className={`flex-1 overflow-auto p-4 flex flex-col items-center bg-gray-200/80 transition-all duration-300 ${editingBlock ? 'pb-[50vh]' : ''}`} 
+        id="canvas-area"
+        className={`flex-1 overflow-auto p-4 bg-gray-200/80 transition-all duration-300 ${editingBlock ? 'pb-[50vh]' : ''}`} 
         onClick={() => setEditingBlockId(null)}
       >
-        <div className="flex flex-col items-center w-full transition-all duration-200">
+        <div className="flex flex-col w-full transition-all duration-200">
           {pages.map((page, index) => (
             <PageRenderer
               key={page.id}
@@ -635,7 +689,7 @@ function PageRenderer({
   }, [page.blocks, header, isFirstPage, globalZoom]);
 
   return (
-    <div id={`page-container-${page.id}`} className="relative mb-8 flex flex-col items-center w-full" style={{ maxWidth: `${794 * globalZoom}px` }}>
+    <div id={`page-container-${page.id}`} className="relative mb-8 flex flex-col items-center mx-auto" style={{ width: `${100 * globalZoom}%`, maxWidth: `${794 * globalZoom}px` }}>
       {/* Page Controls */}
       <div className="flex justify-between w-full mb-2 px-2">
         <span className={`text-xs font-bold ${isActive ? 'text-indigo-600' : 'text-gray-500'}`}>
@@ -659,10 +713,9 @@ function PageRenderer({
             onEditBlock(null);
           }
         }}
-        className={`bg-white shadow-md relative overflow-hidden flex justify-center cursor-pointer transition-all ${isExporting ? '' : isActive ? 'ring-2 ring-indigo-500 ring-offset-2 ring-offset-gray-100' : 'hover:ring-2 hover:ring-gray-300 hover:ring-offset-2 hover:ring-offset-gray-100'}`}
+        className={`bg-white shadow-md relative overflow-hidden flex justify-center cursor-pointer transition-all w-full ${isExporting ? '' : isActive ? 'ring-2 ring-indigo-500 ring-offset-2 ring-offset-gray-100' : 'hover:ring-2 hover:ring-gray-300 hover:ring-offset-2 hover:ring-offset-gray-100'}`}
         style={{ 
           aspectRatio: '210 / 297',
-          width: isExporting ? '794px' : `${100 * globalZoom}%`,
           maxWidth: isExporting ? 'none' : `${794 * globalZoom}px`
         }}
       >
@@ -722,7 +775,7 @@ function PageRenderer({
                   {/* Resize handle for the image header */}
                   {!isExporting && (
                     <div 
-                      className="absolute -bottom-4 right-1/2 translate-x-1/2 w-8 h-8 bg-white border border-gray-300 rounded-full cursor-ns-resize opacity-0 group-hover:opacity-100 transition-opacity shadow-sm z-20 flex items-center justify-center"
+                      className="absolute -bottom-4 right-1/2 translate-x-1/2 w-8 h-8 bg-white border border-gray-300 rounded-full cursor-ns-resize opacity-0 group-hover:opacity-100 transition-opacity shadow-sm z-20 flex items-center justify-center touch-none"
                       onClick={(e) => e.stopPropagation()}
                       onPointerDown={(e) => {
                         e.stopPropagation();

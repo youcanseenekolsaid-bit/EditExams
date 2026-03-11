@@ -29,25 +29,25 @@ export function BlockRenderer({ block, onEdit, onDelete, isEditing, onDragStart,
           {onDragStart && (
             <button 
               onPointerDown={(e) => { e.stopPropagation(); onDragStart(e); }} 
-              className="p-1 bg-white shadow-sm border rounded text-gray-500 hover:text-indigo-600 cursor-grab active:cursor-grabbing"
+              className="p-2 sm:p-2.5 bg-white shadow-sm border rounded text-gray-500 hover:text-indigo-600 cursor-grab active:cursor-grabbing touch-none"
               title="سحب وإفلات"
             >
-              <GripVertical size={12}/>
+              <GripVertical size={18} className="sm:w-5 sm:h-5"/>
             </button>
           )}
           <button 
             onClick={(e) => { e.stopPropagation(); onEdit(); }} 
-            className="p-1 bg-white shadow-sm border rounded text-gray-500 hover:text-indigo-600"
+            className="p-2 sm:p-2.5 bg-white shadow-sm border rounded text-gray-500 hover:text-indigo-600"
             title="إعدادات العنصر"
           >
-            <Settings2 size={12}/>
+            <Settings2 size={18} className="sm:w-5 sm:h-5"/>
           </button>
           <button 
             onClick={(e) => { e.stopPropagation(); onDelete(); }} 
-            className="p-1 bg-white shadow-sm border rounded text-gray-500 hover:text-red-600"
+            className="p-2 sm:p-2.5 bg-white shadow-sm border rounded text-gray-500 hover:text-red-600"
             title="حذف العنصر"
           >
-            <Trash2 size={12}/>
+            <Trash2 size={18} className="sm:w-5 sm:h-5"/>
           </button>
         </div>
       )}
