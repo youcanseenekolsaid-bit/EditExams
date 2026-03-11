@@ -2,7 +2,6 @@ import React from 'react';
 import { Block, Equation } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { Plus, Trash2, X, Settings2 } from 'lucide-react';
-import { DraggableNumberInput } from './DraggableNumberInput';
 
 interface BlockEditorProps {
   block: Block;
@@ -39,52 +38,13 @@ export function BlockEditor({ block, onChange, onClose }: BlockEditorProps) {
     }
   };
 
-  const [startY, setStartY] = React.useState<number | null>(null);
-  const [currentY, setCurrentY] = React.useState<number | null>(null);
-
-  const handleTouchStart = (e: React.TouchEvent | React.MouseEvent) => {
-    const y = 'touches' in e ? e.touches[0].clientY : e.clientY;
-    setStartY(y);
-    setCurrentY(y);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent | React.MouseEvent) => {
-    if (startY !== null) {
-      const y = 'touches' in e ? e.touches[0].clientY : e.clientY;
-      setCurrentY(y);
-    }
-  };
-
-  const handleTouchEnd = () => {
-    if (startY !== null && currentY !== null) {
-      const diff = currentY - startY;
-      if (diff > 50) {
-        onClose();
-      }
-    }
-    setStartY(null);
-    setCurrentY(null);
-  };
-
-  const translateY = startY !== null && currentY !== null && currentY > startY ? currentY - startY : 0;
-
   return (
     <div 
-      className="bg-white border-t border-gray-200 absolute bottom-0 left-0 right-0 rounded-t-3xl shadow-[0_-20px_60px_-15px_rgba(0,0,0,0.1)] z-50 max-h-[60vh] overflow-y-auto pb-safe transition-transform duration-300 ease-out"
-      style={{ transform: `translateY(${translateY}px)` }}
+      className="bg-white border-t border-gray-200 absolute bottom-0 left-0 right-0 rounded-t-3xl shadow-[0_-20px_60px_-15px_rgba(0,0,0,0.1)] z-50 max-h-[60vh] overflow-y-auto pb-safe transition-transform duration-300 ease-out transform translate-y-0"
       onClick={(e) => e.stopPropagation()}
     >
       {/* Drag Handle Indicator */}
-      <div 
-        className="w-full flex justify-center pt-3 pb-1 sticky top-0 bg-white z-20 cursor-grab active:cursor-grabbing"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        onMouseDown={handleTouchStart}
-        onMouseMove={handleTouchMove}
-        onMouseUp={handleTouchEnd}
-        onMouseLeave={handleTouchEnd}
-      >
+      <div className="w-full flex justify-center pt-3 pb-1 sticky top-0 bg-white z-20">
         <div className="w-12 h-1.5 bg-gray-300 rounded-full"></div>
       </div>
 
@@ -120,7 +80,7 @@ export function BlockEditor({ block, onChange, onClose }: BlockEditorProps) {
                 type="range"
                 min="-100"
                 max="100"
-                step="1"
+                step="4"
                 value={block.marginTop ?? 0}
                 onChange={(e) => handleChange('marginTop', parseInt(e.target.value))}
                 className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
@@ -135,7 +95,7 @@ export function BlockEditor({ block, onChange, onClose }: BlockEditorProps) {
                 type="range"
                 min="-100"
                 max="100"
-                step="1"
+                step="4"
                 value={block.marginBottom ?? 16}
                 onChange={(e) => handleChange('marginBottom', parseInt(e.target.value))}
                 className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
@@ -150,7 +110,7 @@ export function BlockEditor({ block, onChange, onClose }: BlockEditorProps) {
                 type="range"
                 min="0.5"
                 max="2"
-                step="0.01"
+                step="0.1"
                 value={block.scale || 1}
                 onChange={(e) => handleChange('scale', parseFloat(e.target.value))}
                 className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
@@ -217,9 +177,10 @@ export function BlockEditor({ block, onChange, onClose }: BlockEditorProps) {
                 {block.equations.map((eq) => (
                   <div key={eq.id} className="flex flex-col gap-3 bg-gray-50 p-3 rounded-xl border border-gray-100" dir="ltr">
                     <div className="flex items-center gap-2">
-                      <DraggableNumberInput
+                      <input
+                        type="number"
                         value={eq.num1}
-                        onChange={(val) => handleEquationChange(eq.id, 'num1', val.toString())}
+                        onChange={(e) => handleEquationChange(eq.id, 'num1', e.target.value)}
                         className={`w-16 border rounded-lg p-2 text-center text-base font-bold focus:ring-2 focus:ring-indigo-500 ${eq.missingField === 'num1' ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-200'}`}
                         placeholder="رقم 1"
                       />
@@ -233,16 +194,18 @@ export function BlockEditor({ block, onChange, onClose }: BlockEditorProps) {
                         <option value="×">×</option>
                         <option value="÷">÷</option>
                       </select>
-                      <DraggableNumberInput
+                      <input
+                        type="number"
                         value={eq.num2}
-                        onChange={(val) => handleEquationChange(eq.id, 'num2', val.toString())}
+                        onChange={(e) => handleEquationChange(eq.id, 'num2', e.target.value)}
                         className={`w-16 border rounded-lg p-2 text-center text-base font-bold focus:ring-2 focus:ring-indigo-500 ${eq.missingField === 'num2' ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-200'}`}
                         placeholder="رقم 2"
                       />
                       <span className="font-bold text-gray-500">=</span>
-                      <DraggableNumberInput
+                      <input
+                        type="number"
                         value={eq.result || ''}
-                        onChange={(val) => handleEquationChange(eq.id, 'result', val.toString())}
+                        onChange={(e) => handleEquationChange(eq.id, 'result', e.target.value)}
                         className={`w-16 border rounded-lg p-2 text-center text-base font-bold focus:ring-2 focus:ring-indigo-500 ${(!eq.missingField || eq.missingField === 'result') ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-200'}`}
                         placeholder="الناتج"
                       />
@@ -319,31 +282,28 @@ export function BlockEditor({ block, onChange, onClose }: BlockEditorProps) {
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1">
                 <label className="block text-xs font-bold text-gray-600">البداية</label>
-                <DraggableNumberInput
+                <input
+                  type="number"
                   value={block.start}
-                  onChange={(val) => handleChange('start', val)}
-                  min={-100}
-                  max={100}
+                  onChange={(e) => handleChange('start', Math.min(100, Math.max(-100, parseInt(e.target.value) || 0)))}
                   className="w-full border border-gray-200 rounded-lg p-2.5 text-center text-base font-bold focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-gray-50 hover:bg-white transition-colors"
                 />
               </div>
               <div className="space-y-1">
                 <label className="block text-xs font-bold text-gray-600">النهاية</label>
-                <DraggableNumberInput
+                <input
+                  type="number"
                   value={block.end}
-                  onChange={(val) => handleChange('end', val)}
-                  min={-100}
-                  max={100}
+                  onChange={(e) => handleChange('end', Math.min(100, Math.max(block.start + 1, parseInt(e.target.value) || 10)))}
                   className="w-full border border-gray-200 rounded-lg p-2.5 text-center text-base font-bold focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-gray-50 hover:bg-white transition-colors"
                 />
               </div>
               <div className="space-y-1">
                 <label className="block text-xs font-bold text-gray-600">الخطوة</label>
-                <DraggableNumberInput
+                <input
+                  type="number"
                   value={block.step}
-                  onChange={(val) => handleChange('step', val)}
-                  min={1}
-                  max={20}
+                  onChange={(e) => handleChange('step', Math.min(20, Math.max(1, parseInt(e.target.value) || 1)))}
                   className="w-full border border-gray-200 rounded-lg p-2.5 text-center text-base font-bold focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-gray-50 hover:bg-white transition-colors"
                 />
               </div>
@@ -389,16 +349,16 @@ export function BlockEditor({ block, onChange, onClose }: BlockEditorProps) {
                       <option value="circle">دوائر ⭕</option>
                       <option value="square">مربعات ⬛</option>
                     </select>
-                    <DraggableNumberInput
+                    <input
+                      type="number"
                       value={group.count}
-                      onChange={(val) => {
-                        const count = typeof val === 'number' ? val : parseInt(val) || 1;
-                        const newGroups = block.groups.map(g => g.id === group.id ? { ...g, count } : g);
+                      onChange={(e) => {
+                        const newGroups = block.groups.map(g => g.id === group.id ? { ...g, count: Math.min(20, Math.max(1, parseInt(e.target.value) || 1)) } : g);
                         handleChange('groups', newGroups);
                       }}
                       className="w-20 border border-gray-200 rounded-lg p-2.5 text-center text-base font-bold focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                      min={1}
-                      max={20}
+                      min="1"
+                      max="20"
                     />
                     <button 
                       onClick={() => {
