@@ -16,6 +16,10 @@ export function AIGeneratorModal({ isOpen, onClose, onGenerate }: AIGeneratorMod
   const [pages, setPages] = useState<string>('auto');
   const [isGenerating, setIsGenerating] = useState(false);
 
+  const arabicToEnglishNumbers = (str: string) => {
+    return str.replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d).toString());
+  };
+
   const questionTypes = [
     { id: 'horizontal', label: 'أفقية' },
     { id: 'vertical', label: 'عمودية' },
@@ -111,12 +115,15 @@ export function AIGeneratorModal({ isOpen, onClose, onGenerate }: AIGeneratorMod
                 تلقائي
               </button>
               <input 
-                type="number" 
-                min="1" 
-                max="50"
+                type="text" 
+                inputMode="numeric"
+                pattern="[0-9]*"
                 placeholder="أدخل رقماً..."
                 value={numQuestions === 'auto' ? '' : numQuestions}
-                onChange={(e) => setNumQuestions(e.target.value || 'auto')}
+                onChange={(e) => {
+                  const val = arabicToEnglishNumbers(e.target.value).replace(/[^0-9]/g, '');
+                  setNumQuestions(val || 'auto');
+                }}
                 className={`flex-[2] px-4 py-2.5 rounded-xl border-2 outline-none transition-all ${numQuestions !== 'auto' ? 'border-indigo-600 bg-white text-gray-800 font-bold' : 'border-gray-200 bg-gray-50 text-gray-500 focus:border-indigo-400'}`}
               />
             </div>
@@ -192,11 +199,15 @@ export function AIGeneratorModal({ isOpen, onClose, onGenerate }: AIGeneratorMod
                   تلقائي
                 </button>
                 <input 
-                  type="number" 
-                  min="1" 
+                  type="text" 
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   placeholder="الدرجة الكلية"
                   value={marks === 'auto' ? '' : marks}
-                  onChange={(e) => setMarks(e.target.value || 'auto')}
+                  onChange={(e) => {
+                    const val = arabicToEnglishNumbers(e.target.value).replace(/[^0-9]/g, '');
+                    setMarks(val || 'auto');
+                  }}
                   className={`px-3 py-2 rounded-lg border-2 text-sm outline-none transition-all ${marks !== 'auto' ? 'border-indigo-600 bg-white text-gray-800 font-bold' : 'border-gray-200 bg-gray-50 text-gray-500 focus:border-indigo-400'}`}
                 />
               </div>
@@ -216,12 +227,15 @@ export function AIGeneratorModal({ isOpen, onClose, onGenerate }: AIGeneratorMod
                   تلقائي
                 </button>
                 <input 
-                  type="number" 
-                  min="1" 
-                  max="10"
+                  type="text" 
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   placeholder="عدد الصفحات"
                   value={pages === 'auto' ? '' : pages}
-                  onChange={(e) => setPages(e.target.value || 'auto')}
+                  onChange={(e) => {
+                    const val = arabicToEnglishNumbers(e.target.value).replace(/[^0-9]/g, '');
+                    setPages(val || 'auto');
+                  }}
                   className={`px-3 py-2 rounded-lg border-2 text-sm outline-none transition-all ${pages !== 'auto' ? 'border-indigo-600 bg-white text-gray-800 font-bold' : 'border-gray-200 bg-gray-50 text-gray-500 focus:border-indigo-400'}`}
                 />
               </div>

@@ -132,17 +132,11 @@ function DraggableText({
   const [isHovered, setIsHovered] = useState(false);
   const showControls = isFocused || isHovered;
   const currentScale = text.scale || 1;
-  const textRef = useRef<HTMLSpanElement>(null);
-
-  useEffect(() => {
-    if (textRef.current && textRef.current.textContent !== text.text) {
-      textRef.current.textContent = text.text;
-    }
-  }, [text.text]);
+  const textRef = useRef<HTMLInputElement>(null);
 
   return (
     <div
-      className="absolute z-10 group"
+      className="absolute z-10 group w-max whitespace-nowrap"
       style={{ 
         left: `${text.x}%`, 
         top: `${text.y}%`,
@@ -250,29 +244,38 @@ function DraggableText({
         </div>
 
         {/* Text Input */}
-        <span
-          ref={textRef}
-          contentEditable
-          suppressContentEditableWarning
-          onBlur={(e) => {
-            setIsFocused(false);
-            onUpdate({ text: e.currentTarget.textContent || 'نص' });
-          }}
-          onFocus={() => setIsFocused(true)}
-          onPointerDown={(e) => e.stopPropagation()}
-          className={`outline-none font-bold text-center whitespace-nowrap px-2 py-1 z-10 ${showControls ? 'bg-white/50 rounded' : ''}`}
-          style={{ 
-            fontSize: `${2 * currentScale}cqw`,
-            lineHeight: '1.2',
-            color: '#000',
-            textShadow: '0px 0px 2px rgba(255,255,255,0.8)',
-            minWidth: '20px',
-            display: 'inline-block'
-          }}
-          dir="rtl"
-        >
-          {text.text}
-        </span>
+        <div className="relative inline-grid items-center justify-center">
+          <span 
+            className="invisible whitespace-pre col-start-1 row-start-1 px-2 py-1 text-center"
+            style={{ 
+              fontSize: `${2 * currentScale}cqw`,
+              lineHeight: '1.2',
+              minWidth: '20px',
+              display: 'inline-block'
+            }}
+            dir="rtl"
+          >
+            {text.text || 'نص'}
+          </span>
+          <input
+            ref={textRef}
+            type="text"
+            value={text.text}
+            onChange={(e) => onUpdate({ text: e.target.value })}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+            onPointerDown={(e) => e.stopPropagation()}
+            className={`col-start-1 row-start-1 w-full bg-transparent outline-none font-bold text-center px-2 py-1 z-10 ${showControls ? 'bg-white/50 rounded' : ''}`}
+            style={{ 
+              fontSize: `${2 * currentScale}cqw`,
+              lineHeight: '1.2',
+              color: '#000',
+              textShadow: '0px 0px 2px rgba(255,255,255,0.8)',
+            }}
+            dir="rtl"
+            placeholder="نص"
+          />
+        </div>
       </div>
     </div>
   );

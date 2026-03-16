@@ -25,7 +25,7 @@ export function BlockRenderer({ block, onEdit, onDelete, isEditing, onDragStart,
       onClick={(e) => { e.stopPropagation(); onEdit(); }}
     >
       {!isExporting && (
-        <div className={`absolute top-0 left-0 flex gap-1 z-10 transition-opacity ${isEditing ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+        <div className={`absolute top-0 left-0 flex gap-1 z-10 transition-opacity ${isEditing ? 'opacity-100' : 'opacity-0 md:group-hover:opacity-100'}`}>
           {onDragStart && (
             <button 
               onPointerDown={(e) => { e.stopPropagation(); onDragStart(e); }} 
@@ -238,7 +238,7 @@ export function BlockRenderer({ block, onEdit, onDelete, isEditing, onDragStart,
           return (
             <div className="w-full overflow-hidden">
               <h3 className="font-bold text-[10px] sm:text-xs mb-2" style={{ fontSize: block.questionFontSize ? `${block.questionFontSize}px` : undefined }}>{block.question}</h3>
-              <div className="flex justify-center items-center w-full" style={{ gap: `${gapSize}px`, zoom: block.scale || 1 } as any} dir="ltr">
+              <div className="flex justify-center items-center w-full" style={{ gap: `${gapSize}px`, zoom: block.scale || 1 } as any} dir="rtl">
                 {block.sequence.map((item, i) => (
                   <div key={i} className="flex items-center shrink-0" style={{ gap: `${gapSize}px` }}>
                     {item === '' ? (
@@ -246,7 +246,7 @@ export function BlockRenderer({ block, onEdit, onDelete, isEditing, onDragStart,
                     ) : (
                       <span className="font-bold shrink-0" style={{ fontSize: `${fontSize}px` }}>{toArabicNumerals(item)}</span>
                     )}
-                    {i < block.sequence.length - 1 && <span className="text-gray-400 shrink-0" style={{ fontSize: `${fontSize}px` }}>,</span>}
+                    {i < block.sequence.length - 1 && <span className="text-gray-400 shrink-0" style={{ fontSize: `${fontSize}px` }}>،</span>}
                   </div>
                 ))}
               </div>
@@ -320,21 +320,21 @@ export function BlockRenderer({ block, onEdit, onDelete, isEditing, onDragStart,
                 gridTemplateColumns: `repeat(${block.columns || 4}, minmax(0, 1fr))`,
                 zoom: block.scale || 1 
               } as any}
-              dir="ltr"
+              dir="rtl"
             >
               {block.cells.map((cell) => (
                 <div key={cell.id} className="flex items-center justify-center">
-                  <div className="flex border-2 border-gray-800 rounded-sm bg-white" dir="ltr">
+                  <div className="flex border-2 border-gray-800 rounded-sm bg-white" dir="rtl">
                     {block.boxType === 'previous' ? (
                       <>
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 border-r-2 border-gray-800"></div>
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 border-l-2 border-gray-800"></div>
                         <div className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center text-sm sm:text-lg font-bold">
                           {toArabicNumerals(cell.number)}
                         </div>
                       </>
                     ) : (
                       <>
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 border-r-2 border-gray-800 flex items-center justify-center text-sm sm:text-lg font-bold">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 border-l-2 border-gray-800 flex items-center justify-center text-sm sm:text-lg font-bold">
                           {toArabicNumerals(cell.number)}
                         </div>
                         <div className="w-10 h-10 sm:w-12 sm:h-12"></div>

@@ -1,8 +1,8 @@
 [{
-      "relation": ["delegate_permission/common.handle_all_urls"],
-      "target": {
-        "namespace": "android_app",
-        "package_name": "app.netlify.editexams.twa",
-        "sha256_cert_fingerprints": ["61:29:F7:76:96:B6:21:81:12:36:C1:8F:49:DD:98:D3:56:FD:AD:BC:4D:4C:19:B9:B5:85:B0:DC:51:65:E5:0E"]
-      }
-    }]
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "app.netlify.editexams.twa",
+    "sha256_cert_fingerprints": ["FC:41:96:F8:74:4B:14:78:0B:33:9D:0C:DC:43:16:0A:93:FD:66:AE:9D:09:1E:6B:34:88:3F:9C:B0:98:E8:46"]
+  }
+}]

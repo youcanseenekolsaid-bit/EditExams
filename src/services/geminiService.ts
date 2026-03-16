@@ -6,15 +6,31 @@ let ai: GoogleGenAI | null = null;
 
 function getAiClient() {
   if (!ai) {
-    // Support both Vite's import.meta.env (for local development) and process.env (for AI Studio)
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY || (typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : undefined);
+    let apiKey = localStorage.getItem('gemini_api_key');
     
     if (!apiKey) {
-      throw new Error("لم يتم العثور على مفتاح API. يرجى إضافة VITE_GEMINI_API_KEY إلى ملف .env في حال تشغيل المشروع محلياً.");
+      apiKey = process.env.GEMINI_API_KEY;
+    }
+    
+    if (!apiKey) {
+      throw new Error("لم يتم العثور على مفتاح API. يرجى إضافة مفتاح Gemini API في إعدادات التطبيق.");
     }
     ai = new GoogleGenAI({ apiKey });
   }
   return ai;
+}
+
+export function setApiKey(key: string) {
+  if (key.trim() === '') {
+    localStorage.removeItem('gemini_api_key');
+  } else {
+    localStorage.setItem('gemini_api_key', key.trim());
+  }
+  ai = null; // Reset client so it re-initializes with new key
+}
+
+export function getApiKey() {
+  return localStorage.getItem('gemini_api_key') || process.env.GEMINI_API_KEY || '';
 }
 
 async function fetchPdfAsBase64(url: string): Promise<string | null> {
@@ -81,29 +97,31 @@ export async function generateWorksheet(
       
       مهم جداً: استخدم تحليلك وذكائك لتوزيع الأسئلة على صفحات متعددة (pages). لا تضع كل الأسئلة في صفحة واحدة إذا كانت ستؤدي إلى ازدحامها. انتقل إلى صفحة جديدة عندما ترى أن الصفحة الحالية امتلأت بناءً على حجم ونوع الأسئلة التي قمت بتوليدها.
       
+      هام جداً بخصوص الأرقام: يجب استخدام الأرقام العربية المشرقية (١، ٢، ٣، ٤، ٥، ٦، ٧، ٨، ٩، ٠) في جميع الأرقام والمسائل الحسابية المكتوبة، ولا تستخدم الأرقام الإنجليزية (1, 2, 3).
+      
       قم بإرجاع كائن JSON يحتوي على مصفوفة صفحات (pages)، وكل صفحة تحتوي على مصفوفة من الأسئلة (blocks).
       كل كائن سؤال (block) يجب أن يتوافق مع أحد الأنواع التالية:
       
       1. Horizontal Math (عمليات حسابية أفقية):
-      { "type": "horizontal_math", "question": "نص السؤال (مثال: أوجد ناتج الجمع)", "equations": [{ "id": "uuid", "num1": "5", "num2": "3", "operator": "+", "missingField": "result" }, { "id": "uuid", "num1": "10", "num2": "4", "operator": "-", "missingField": "result" }], "columns": 2 }
+      { "type": "horizontal_math", "question": "نص السؤال (مثال: أوجد ناتج الجمع)", "equations": [{ "id": "uuid", "num1": "٥", "num2": "٣", "operator": "+", "missingField": "result" }, { "id": "uuid", "num1": "١٠", "num2": "٤", "operator": "-", "missingField": "result" }], "columns": 2 }
       
       2. Vertical Math (عمليات حسابية عمودية):
-      { "type": "vertical_math", "question": "نص السؤال (مثال: أوجد ناتج الطرح)", "equations": [{ "id": "uuid", "num1": "15", "num2": "7", "operator": "-" }, { "id": "uuid", "num1": "20", "num2": "12", "operator": "-" }] }
+      { "type": "vertical_math", "question": "نص السؤال (مثال: أوجد ناتج الطرح)", "equations": [{ "id": "uuid", "num1": "١٥", "num2": "٧", "operator": "-" }, { "id": "uuid", "num1": "٢٠", "num2": "١٢", "operator": "-" }] }
       
       3. Comparison (مقارنة):
-      { "type": "comparison", "question": "نص السؤال (مثال: ضع علامة > أو < أو =)", "pairs": [{ "id": "uuid", "left": "10", "right": "15" }, { "id": "uuid", "left": "20", "right": "20" }], "columns": 2 }
+      { "type": "comparison", "question": "نص السؤال (مثال: ضع علامة > أو < أو =)", "pairs": [{ "id": "uuid", "left": "١٠", "right": "١٥" }, { "id": "uuid", "left": "٢٠", "right": "٢٠" }], "columns": 2 }
       
       4. Pattern (نمط):
-      { "type": "pattern", "question": "نص السؤال (مثال: أكمل النمط التالي)", "sequence": ["2", "4", "6", ""] }
+      { "type": "pattern", "question": "نص السؤال (مثال: أكمل النمط التالي)", "sequence": ["٢", "٤", "٦", ""] }
       
       5. Text to Number (كتابة الأعداد):
       { "type": "text_to_number", "question": "نص السؤال (مثال: اكتب الأعداد التالية بالأرقام)", "items": [{ "id": "uuid", "text": "خمسة عشر" }, { "id": "uuid", "text": "عشرون" }], "columns": 2 }
       
       6. Previous Next (السابق والتالي):
-      { "type": "previous_next", "question": "نص السؤال (مثال: اكتب العدد السابق)", "boxType": "previous", "cells": [{ "id": "uuid", "number": "10" }, { "id": "uuid", "number": "15" }], "columns": 2 }
+      { "type": "previous_next", "question": "نص السؤال (مثال: اكتب العدد السابق)", "boxType": "previous", "cells": [{ "id": "uuid", "number": "١٠" }, { "id": "uuid", "number": "١٥" }], "columns": 2 }
       
       7. Ordering Grid (ترتيب الأعداد):
-      { "type": "ordering_grid", "question": "نص السؤال (مثال: رتب الأعداد التالية تصاعدياً)", "grids": [{ "id": "uuid", "label": "أعداد", "numbers": "5, 2, 8, 1" }] }
+      { "type": "ordering_grid", "question": "نص السؤال (مثال: رتب الأعداد التالية تصاعدياً)", "grids": [{ "id": "uuid", "label": "أعداد", "numbers": "٥, ٢, ٨, ١" }] }
       
       ملاحظات هامة جداً:
       - يجب أن يكون لكل عنصر وداخل كل مصفوفة (مثل equations, pairs, items) معرف فريد (id) عبارة عن نص عشوائي.

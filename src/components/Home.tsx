@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, Calculator, FileText, Trash2, Edit2, Sparkles } from 'lucide-react';
+import { BookOpen, Calculator, FileText, Trash2, Edit2, Sparkles, Settings, Key } from 'lucide-react';
 import { AIGeneratorModal } from './AIGeneratorModal';
 import { GeneratingModal } from './GeneratingModal';
-import { generateWorksheet } from '../services/geminiService';
+import { generateWorksheet, getApiKey, setApiKey } from '../services/geminiService';
 import { v4 as uuidv4 } from 'uuid';
 
 export function Home({ onSelectMath, onEditDocument }: { onSelectMath: () => void, onEditDocument: (id: string) => void }) {
@@ -16,6 +16,11 @@ export function Home({ onSelectMath, onEditDocument }: { onSelectMath: () => voi
   const [generationStatus, setGenerationStatus] = useState('');
   const [abortController, setAbortController] = useState<AbortController | null>(null);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [hasAutosave, setHasAutosave] = useState(false);
+  
+  // Settings State
+  const [showSettings, setShowSettings] = useState(false);
+  const [apiKeyValue, setApiKeyValue] = useState('');
 
   useEffect(() => {
     const docs = localStorage.getItem('math-editor-saved-docs');
@@ -23,6 +28,11 @@ export function Home({ onSelectMath, onEditDocument }: { onSelectMath: () => voi
       try {
         setSavedDocs(JSON.parse(docs));
       } catch (e) {}
+    }
+    
+    const autosaveStr = localStorage.getItem('math-editor-autosave');
+    if (autosaveStr) {
+      setHasAutosave(true);
     }
   }, []);
 
@@ -116,9 +126,27 @@ export function Home({ onSelectMath, onEditDocument }: { onSelectMath: () => voi
     setShowCancelConfirm(false);
   };
 
+  const openSettings = () => {
+    setApiKeyValue(getApiKey());
+    setShowSettings(true);
+  };
+
+  const saveSettings = () => {
+    setApiKey(apiKeyValue);
+    setShowSettings(false);
+    alert('تم حفظ الإعدادات بنجاح');
+  };
+
   return (
     <div className="flex-1 flex flex-col bg-gray-50 h-full overflow-y-auto">
-      <div className="bg-indigo-600 px-6 pt-16 pb-8 md:pt-24 md:pb-16 rounded-b-[40px] md:rounded-b-[80px] shadow-lg shrink-0">
+      <div className="bg-indigo-600 px-6 pt-16 pb-8 md:pt-24 md:pb-16 rounded-b-[40px] md:rounded-b-[80px] shadow-lg shrink-0 relative">
+        <button 
+          onClick={openSettings}
+          className="absolute top-6 left-6 p-2 bg-white/20 rounded-full text-white hover:bg-white/30 transition-colors"
+          title="الإعدادات"
+        >
+          <Settings size={24} />
+        </button>
         <div className="max-w-4xl mx-auto">
           <div className="flex justify-center mb-4 md:mb-8">
             <div className="bg-white/20 p-4 md:p-6 rounded-2xl md:rounded-3xl backdrop-blur-sm">
@@ -155,7 +183,10 @@ export function Home({ onSelectMath, onEditDocument }: { onSelectMath: () => voi
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
           <button 
-            onClick={onSelectMath}
+            onClick={() => {
+              localStorage.removeItem('math-editor-autosave');
+              onSelectMath();
+            }}
             className="w-full bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center gap-5 hover:border-indigo-300 hover:shadow-md transition-all active:scale-[0.98]"
           >
             <div className="bg-blue-100 p-4 rounded-2xl text-blue-600">
@@ -180,6 +211,34 @@ export function Home({ onSelectMath, onEditDocument }: { onSelectMath: () => voi
             </div>
           </button>
         </div>
+
+        {hasAutosave && (
+          <div className="mb-8">
+            <div className="bg-orange-50 border border-orange-200 p-4 rounded-2xl flex items-center justify-between">
+              <div className="flex-1 text-right ml-4">
+                <h3 className="font-bold text-orange-800">تصميم غير محفوظ</h3>
+                <p className="text-xs text-orange-600">يوجد تصميم سابق لم يتم حفظه. هل ترغب في استعادته؟</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => onSelectMath()}
+                  className="px-4 py-2 bg-orange-600 text-white text-sm font-bold rounded-xl hover:bg-orange-700 transition-colors"
+                >
+                  استعادة
+                </button>
+                <button 
+                  onClick={() => {
+                    localStorage.removeItem('math-editor-autosave');
+                    setHasAutosave(false);
+                  }}
+                  className="px-4 py-2 bg-white text-orange-600 border border-orange-200 text-sm font-bold rounded-xl hover:bg-orange-50 transition-colors"
+                >
+                  حذف
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {savedDocs.length > 0 && (
           <div>
@@ -251,6 +310,53 @@ export function Home({ onSelectMath, onEditDocument }: { onSelectMath: () => voi
         onConfirmCancel={handleConfirmCancel}
         onAbortCancel={handleAbortCancel}
       />
+      {/* Settings Modal */}
+      {showSettings && (
+        <div className="fixed inset-0 bg-black/50 z-[200] flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="bg-indigo-600 p-6 text-white flex items-center gap-3 shrink-0">
+              <Settings className="w-6 h-6" />
+              <h2 className="text-xl font-bold">إعدادات التطبيق</h2>
+            </div>
+            
+            <div className="p-6 overflow-y-auto">
+              <div className="mb-6">
+                <label className="block text-gray-700 font-bold mb-2 flex items-center gap-2">
+                  <Key size={18} className="text-indigo-600" />
+                  مفتاح Gemini API
+                </label>
+                <p className="text-xs text-gray-500 mb-3 leading-relaxed">
+                  لتمكين ميزة الإنشاء الذكي، يرجى إدخال مفتاح API الخاص بك من Google Gemini. 
+                  يتم حفظ هذا المفتاح محلياً على جهازك فقط.
+                </p>
+                <input 
+                  type="password" 
+                  value={apiKeyValue}
+                  onChange={(e) => setApiKeyValue(e.target.value)}
+                  placeholder="AIzaSy..."
+                  className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-left dir-ltr"
+                />
+              </div>
+            </div>
+            
+            <div className="p-6 bg-gray-50 border-t border-gray-100 flex gap-3 shrink-0">
+              <button 
+                onClick={saveSettings}
+                className="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition-colors"
+              >
+                حفظ الإعدادات
+              </button>
+              <button 
+                onClick={() => setShowSettings(false)}
+                className="flex-1 bg-white text-gray-700 border border-gray-300 py-3 rounded-xl font-bold hover:bg-gray-50 transition-colors"
+              >
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

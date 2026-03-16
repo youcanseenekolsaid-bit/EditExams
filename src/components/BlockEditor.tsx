@@ -529,7 +529,7 @@ export function BlockEditor({ block, onChange, onClose }: BlockEditorProps) {
                 <span className="w-1.5 h-4 bg-cyan-400 rounded-full"></span>
                 النمط <span className="text-xs font-normal text-gray-500">(اترك المربع فارغاً ليكون سؤالاً)</span>
               </label>
-              <div className="flex flex-wrap gap-3 bg-gray-50 p-4 rounded-xl border border-gray-100" dir="ltr">
+              <div className="flex flex-wrap gap-3 bg-gray-50 p-4 rounded-xl border border-gray-100" dir="rtl">
                 {block.sequence.map((item, i) => (
                   <div key={i} className="flex items-center gap-1 bg-white p-1.5 rounded-lg border border-gray-200 shadow-sm relative group">
                     <input
@@ -547,7 +547,7 @@ export function BlockEditor({ block, onChange, onClose }: BlockEditorProps) {
                       onClick={() => {
                         handleChange('sequence', block.sequence.filter((_, idx) => idx !== i));
                       }}
-                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-red-600"
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-100 transition-opacity shadow-sm hover:bg-red-600"
                       title="حذف العنصر"
                     >
                       <X size={12} />
@@ -555,7 +555,7 @@ export function BlockEditor({ block, onChange, onClose }: BlockEditorProps) {
                   </div>
                 ))}
                 <button
-                  onClick={() => handleChange('sequence', [...block.sequence, ''])}
+                  onClick={() => handleChange('sequence', ['', ...block.sequence])}
                   className="w-12 h-[46px] flex items-center justify-center bg-white text-indigo-600 border-2 border-dashed border-indigo-200 hover:bg-indigo-50 hover:border-indigo-400 rounded-lg transition-all"
                   title="إضافة عنصر للنمط"
                 >
@@ -766,7 +766,7 @@ export function BlockEditor({ block, onChange, onClose }: BlockEditorProps) {
                 <span className="w-1.5 h-4 bg-sky-400 rounded-full"></span>
                 الأعداد
               </label>
-              <div className="flex flex-wrap gap-3 bg-gray-50 p-4 rounded-xl border border-gray-100" dir="ltr">
+              <div className="flex flex-wrap gap-3 bg-gray-50 p-4 rounded-xl border border-gray-100" dir="rtl">
                 {block.cells.map((cell, i) => (
                   <div key={cell.id} className="flex items-center gap-1 bg-white p-1.5 rounded-lg border border-gray-200 shadow-sm relative group">
                     <input
@@ -783,7 +783,7 @@ export function BlockEditor({ block, onChange, onClose }: BlockEditorProps) {
                       onClick={() => {
                         handleChange('cells', block.cells.filter((c) => c.id !== cell.id));
                       }}
-                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-red-600"
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-100 transition-opacity shadow-sm hover:bg-red-600"
                       title="حذف العدد"
                     >
                       <X size={12} />
@@ -791,7 +791,7 @@ export function BlockEditor({ block, onChange, onClose }: BlockEditorProps) {
                   </div>
                 ))}
                 <button
-                  onClick={() => handleChange('cells', [...block.cells, { id: uuidv4(), number: '١' }])}
+                  onClick={() => handleChange('cells', [{ id: uuidv4(), number: '١' }, ...block.cells])}
                   className="w-12 h-[46px] flex items-center justify-center bg-white text-indigo-600 border-2 border-dashed border-indigo-200 hover:bg-indigo-50 hover:border-indigo-400 rounded-lg transition-all"
                   title="إضافة عدد"
                 >

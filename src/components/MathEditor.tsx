@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ArrowRight, Download, Type, Hash, ListOrdered, Image as ImageIcon, MinusSquare, Settings2, Eye, FileDown, Plus, Trash2, MoreHorizontal, ArrowUpDown, Languages, ArrowLeftRight, Move, Undo2, Redo2, Save, ZoomIn, ZoomOut } from 'lucide-react';
+import { ArrowRight, Download, Type, Hash, ListOrdered, Image as ImageIcon, MinusSquare, Settings2, Eye, FileDown, Plus, Trash2, MoreHorizontal, ArrowUpDown, Languages, ArrowLeftRight, Move, Undo2, Redo2, Save, ZoomIn, ZoomOut, Check } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
-import { toPng } from 'html-to-image';
+import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { Block, DocumentHeader } from '../types';
 import { BlockRenderer } from './BlockRenderer';
@@ -86,10 +86,14 @@ export function MathEditor({ onBack, documentId }: { onBack: () => void, documen
   const [currentDocId, setCurrentDocId] = useState<string>(documentId || uuidv4());
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showExitModal, setShowExitModal] = useState(false);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [showExportSuccess, setShowExportSuccess] = useState(false);
+  const [saveName, setSaveName] = useState(header.testTitle || 'ورقة عمل بدون عنوان');
 
   const historyRef = useRef<{pages: PageData[], header: DocumentHeader}[]>([{ pages, header }]);
   const historyIndexRef = useRef(0);
   const isUndoRedoAction = useRef(false);
+  const isInitialLoad = useRef(true);
   const [historyIndexState, setHistoryIndexState] = useState(0);
 
   const globalZoomRef = useRef(globalZoom);
@@ -99,51 +103,6 @@ export function MathEditor({ onBack, documentId }: { onBack: () => void, documen
 
   const touchStartDist = useRef<number | null>(null);
   const initialZoom = useRef<number>(1);
-
-  useEffect(() => {
-    const canvas = document.getElementById('canvas-area');
-    if (!canvas) return;
-
-    const handleTouchStart = (e: TouchEvent) => {
-      if (e.touches.length === 2) {
-        const dist = Math.hypot(
-          e.touches[0].clientX - e.touches[1].clientX,
-          e.touches[0].clientY - e.touches[1].clientY
-        );
-        touchStartDist.current = dist;
-        initialZoom.current = globalZoomRef.current;
-      }
-    };
-
-    const handleTouchMove = (e: TouchEvent) => {
-      if (e.touches.length === 2 && touchStartDist.current !== null) {
-        e.preventDefault(); // Prevent native zoom/scroll
-        const dist = Math.hypot(
-          e.touches[0].clientX - e.touches[1].clientX,
-          e.touches[0].clientY - e.touches[1].clientY
-        );
-        const scale = dist / touchStartDist.current;
-        const newZoom = Math.max(0.5, Math.min(3, initialZoom.current * scale));
-        setGlobalZoom(newZoom);
-      }
-    };
-
-    const handleTouchEnd = () => {
-      touchStartDist.current = null;
-    };
-
-    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
-    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
-    canvas.addEventListener('touchend', handleTouchEnd);
-    canvas.addEventListener('touchcancel', handleTouchEnd);
-
-    return () => {
-      canvas.removeEventListener('touchstart', handleTouchStart);
-      canvas.removeEventListener('touchmove', handleTouchMove);
-      canvas.removeEventListener('touchend', handleTouchEnd);
-      canvas.removeEventListener('touchcancel', handleTouchEnd);
-    };
-  }, []);
 
   useEffect(() => {
     // Auto-save for current session recovery
@@ -160,6 +119,17 @@ export function MathEditor({ onBack, documentId }: { onBack: () => void, documen
     }
     
     const historyTimeout = setTimeout(() => {
+      if (isInitialLoad.current) {
+        isInitialLoad.current = false;
+        return;
+      }
+
+      const lastState = historyRef.current[historyIndexRef.current];
+      if (JSON.stringify(lastState.pages) === JSON.stringify(pages) && 
+          JSON.stringify(lastState.header) === JSON.stringify(header)) {
+        return;
+      }
+
       const newHistory = historyRef.current.slice(0, historyIndexRef.current + 1);
       newHistory.push({ pages, header });
       if (newHistory.length > 50) newHistory.shift();
@@ -167,10 +137,7 @@ export function MathEditor({ onBack, documentId }: { onBack: () => void, documen
       historyIndexRef.current = newHistory.length - 1;
       setHistoryIndexState(historyIndexRef.current);
       
-      // Mark as unsaved if it's not the initial load
-      if (historyRef.current.length > 1) {
-        setHasUnsavedChanges(true);
-      }
+      setHasUnsavedChanges(true);
     }, 500);
 
     return () => {
@@ -203,7 +170,7 @@ export function MathEditor({ onBack, documentId }: { onBack: () => void, documen
     }
   };
 
-  const saveWork = () => {
+  const saveWork = (name?: string) => {
     const docsStr = localStorage.getItem('math-editor-saved-docs');
     let docs = [];
     if (docsStr) {
@@ -212,13 +179,23 @@ export function MathEditor({ onBack, documentId }: { onBack: () => void, documen
       } catch (e) {}
     }
 
+    let finalName = name || header.testTitle || 'ورقة عمل بدون عنوان';
+    
+    // Check for duplicate names
+    let counter = 1;
+    let originalName = finalName;
+    while (docs.some((d: any) => d.title === finalName && d.id !== currentDocId)) {
+      finalName = `${originalName} (${counter})`;
+      counter++;
+    }
+
     const docIndex = docs.findIndex((d: any) => d.id === currentDocId);
     const docData = {
       id: currentDocId,
-      title: header.testTitle || 'ورقة عمل بدون عنوان',
+      title: finalName,
       updatedAt: Date.now(),
       pages,
-      header
+      header: { ...header, testTitle: finalName }
     };
 
     if (docIndex >= 0) {
@@ -228,7 +205,11 @@ export function MathEditor({ onBack, documentId }: { onBack: () => void, documen
     }
 
     localStorage.setItem('math-editor-saved-docs', JSON.stringify(docs));
+    // Clear autosave so it doesn't bleed into new designs
+    localStorage.removeItem('math-editor-autosave');
+    
     setHasUnsavedChanges(false);
+    setHeader({ ...header, testTitle: finalName });
     
     // Optional: Show a brief success message
     const btn = document.getElementById('save-btn');
@@ -241,16 +222,24 @@ export function MathEditor({ onBack, documentId }: { onBack: () => void, documen
     }
   };
 
+  const handleSaveClick = () => {
+    setSaveName(header.testTitle || 'ورقة عمل بدون عنوان');
+    setShowSaveModal(true);
+  };
+
   const handleBackClick = () => {
     if (hasUnsavedChanges) {
       setShowExitModal(true);
     } else {
+      // Clear autosave on clean exit to prevent bleeding
+      localStorage.removeItem('math-editor-autosave');
       onBack();
     }
   };
 
   const handleExitWithoutSaving = () => {
     setShowExitModal(false);
+    localStorage.removeItem('math-editor-autosave');
     onBack();
   };
 
@@ -390,13 +379,18 @@ export function MathEditor({ onBack, documentId }: { onBack: () => void, documen
         if (!pageElement) continue;
 
         const rect = pageElement.getBoundingClientRect();
-        const canvasWidth = rect.width * 3; // Use pixelRatio 3 for better quality
-        const canvasHeight = rect.height * 3;
-
-        const imgData = await toPng(pageElement, {
-          pixelRatio: 3,
-          backgroundColor: '#ffffff'
+        const canvas = await html2canvas(pageElement, {
+          scale: 2, // Use scale 2 for better performance on mobile
+          backgroundColor: '#ffffff',
+          useCORS: true,
+          allowTaint: true,
+          logging: false
         });
+        
+        const imgData = canvas.toDataURL('image/png');
+        
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
         
         const pdfHeight = (canvasHeight * pdfWidth) / canvasWidth;
         
@@ -411,7 +405,28 @@ export function MathEditor({ onBack, documentId }: { onBack: () => void, documen
         pdf.addImage(imgData, 'PNG', xOffset, 0, finalWidth, finalHeight);
       }
       
-      pdf.save('math-worksheet.pdf');
+      const pdfBlob = pdf.output('blob');
+      const file = new File([pdfBlob], 'math-worksheet.pdf', { type: 'application/pdf' });
+      
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: 'ورقة عمل رياضيات',
+            text: 'تم تصدير ورقة العمل من مصمم الأوراق'
+          });
+          setShowExportSuccess(true);
+        } catch (e) {
+          // User cancelled or share failed, fallback to save
+          console.log('Share cancelled or failed', e);
+          pdf.save('math-worksheet.pdf');
+          setShowExportSuccess(true);
+        }
+      } else {
+        // Fallback for desktop/browsers that don't support sharing files
+        pdf.save('math-worksheet.pdf');
+        setShowExportSuccess(true);
+      }
     } catch (error) {
       console.error('Error exporting PDF:', error);
       alert('حدث خطأ أثناء تصدير الملف');
@@ -480,7 +495,7 @@ export function MathEditor({ onBack, documentId }: { onBack: () => void, documen
           <div className="w-px h-5 sm:h-6 bg-gray-300 mx-0.5 sm:mx-1"></div>
           <button 
             id="save-btn"
-            onClick={saveWork}
+            onClick={handleSaveClick}
             className="p-1.5 sm:p-2 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors flex items-center justify-center min-w-[36px]"
             title="حفظ العمل"
           >
@@ -497,6 +512,36 @@ export function MathEditor({ onBack, documentId }: { onBack: () => void, documen
           </button>
         </div>
       </header>
+
+      {/* Exporting Overlay */}
+      {isExporting && (
+        <div className="fixed inset-0 bg-white/90 backdrop-blur-sm z-[150] flex flex-col items-center justify-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-indigo-600 border-t-transparent mb-4"></div>
+          <h3 className="text-xl font-bold text-indigo-900 mb-2">جاري تجهيز الملف...</h3>
+          <p className="text-indigo-600">يرجى الانتظار، يتم الآن تصدير ورقة العمل بجودة عالية.</p>
+        </div>
+      )}
+
+      {/* Export Success Modal */}
+      {showExportSuccess && (
+        <div className="fixed inset-0 bg-black/50 z-[200] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl text-center">
+            <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Check size={32} />
+            </div>
+            <h3 className="text-xl font-bold text-gray-800 mb-2">تم التصدير بنجاح!</h3>
+            <p className="text-gray-600 mb-6">
+              تم تصدير ملف الـ PDF بنجاح. يمكنك الآن مشاركته أو حفظه في جهازك.
+            </p>
+            <button 
+              onClick={() => setShowExportSuccess(false)}
+              className="w-full py-2.5 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition-colors"
+            >
+              حسناً
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Exit Modal */}
       {showExitModal && (
@@ -520,6 +565,43 @@ export function MathEditor({ onBack, documentId }: { onBack: () => void, documen
               <button 
                 onClick={() => setShowExitModal(false)}
                 className="w-full py-2.5 rounded-xl border border-gray-300 text-gray-700 font-bold hover:bg-gray-50 transition-colors"
+              >
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Save Modal */}
+      {showSaveModal && (
+        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
+            <h3 className="text-xl font-bold text-gray-800 mb-4">حفظ التصميم</h3>
+            <div className="mb-6">
+              <label className="block text-sm font-bold text-gray-700 mb-2">اسم التصميم</label>
+              <input 
+                type="text" 
+                value={saveName}
+                onChange={(e) => setSaveName(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                placeholder="أدخل اسم التصميم..."
+                dir="rtl"
+              />
+            </div>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => {
+                  saveWork(saveName);
+                  setShowSaveModal(false);
+                }}
+                className="flex-1 py-2.5 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-700 transition-colors"
+              >
+                حفظ
+              </button>
+              <button 
+                onClick={() => setShowSaveModal(false)}
+                className="flex-1 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-bold hover:bg-gray-50 transition-colors"
               >
                 إلغاء
               </button>
@@ -689,7 +771,7 @@ function PageRenderer({
   }, [page.blocks, header, isFirstPage, globalZoom]);
 
   return (
-    <div id={`page-container-${page.id}`} className="relative mb-8 flex flex-col items-center mx-auto" style={{ width: `${100 * globalZoom}%`, maxWidth: `${794 * globalZoom}px` }}>
+    <div id={`page-container-${page.id}`} className="relative mb-8 flex flex-col items-center mx-auto" style={isExporting ? { width: '794px', maxWidth: '794px' } : { width: `${100 * globalZoom}%`, maxWidth: `${794 * globalZoom}px` }}>
       {/* Page Controls */}
       <div className="flex justify-between w-full mb-2 px-2">
         <span className={`text-xs font-bold ${isActive ? 'text-indigo-600' : 'text-gray-500'}`}>
@@ -716,7 +798,9 @@ function PageRenderer({
         className={`bg-white shadow-md relative overflow-hidden flex justify-center cursor-pointer transition-all w-full ${isExporting ? '' : isActive ? 'ring-2 ring-indigo-500 ring-offset-2 ring-offset-gray-100' : 'hover:ring-2 hover:ring-gray-300 hover:ring-offset-2 hover:ring-offset-gray-100'}`}
         style={{ 
           aspectRatio: '210 / 297',
-          maxWidth: isExporting ? 'none' : `${794 * globalZoom}px`
+          maxWidth: isExporting ? 'none' : `${794 * globalZoom}px`,
+          width: isExporting ? '794px' : undefined,
+          height: isExporting ? '1123px' : undefined,
         }}
       >
         <div 
@@ -745,26 +829,25 @@ function PageRenderer({
               {header.useImageHeader ? (
                 <div className="relative w-full flex justify-center overflow-visible">
                   <div 
-                    className="relative"
+                    className="relative transition-all"
                     style={{ 
-                      transform: `scale(${header.imageScale || 1})`,
-                      transformOrigin: 'top center',
-                      width: '100%',
-                      maxWidth: '800px',
-                      containerType: 'inline-size'
+                      width: `${(header.imageScale || 1) * 100}%`,
+                      maxWidth: '100%'
                     }}
                   >
                     <img src="/calesha.png" alt="Header" className="w-full h-auto object-contain" />
                     {header.headerTexts?.map(text => (
                       <div
                         key={text.id}
-                        className="absolute font-bold text-center pointer-events-none whitespace-nowrap"
+                        dir="rtl"
+                        className="absolute font-bold text-center pointer-events-none whitespace-nowrap w-max"
                         style={{
                           left: `${text.x}%`,
                           top: `${text.y}%`,
-                          fontSize: `${2 * (text.scale || 1)}cqw`,
+                          fontSize: `${2 * (text.scale || 1) * 7.94 * (header.imageScale || 1)}px`,
                           transform: 'translate(-50%, -50%)',
-                          color: '#000'
+                          color: '#000',
+                          fontFamily: "'Cairo', sans-serif"
                         }}
                       >
                         {text.text}
@@ -775,7 +858,7 @@ function PageRenderer({
                   {/* Resize handle for the image header */}
                   {!isExporting && (
                     <div 
-                      className="absolute -bottom-4 right-1/2 translate-x-1/2 w-8 h-8 bg-white border border-gray-300 rounded-full cursor-ns-resize opacity-0 group-hover:opacity-100 transition-opacity shadow-sm z-20 flex items-center justify-center touch-none"
+                      className="absolute -bottom-4 right-1/2 translate-x-1/2 w-8 h-8 bg-white border border-gray-300 rounded-full cursor-ns-resize opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shadow-sm z-20 flex items-center justify-center touch-none"
                       onClick={(e) => e.stopPropagation()}
                       onPointerDown={(e) => {
                         e.stopPropagation();
@@ -928,7 +1011,7 @@ function FloatingCircleComponent({
 
         {/* Drag Handle */}
         <div 
-          className={`absolute -top-8 left-1/2 -translate-x-1/2 p-1.5 bg-indigo-600 text-white rounded cursor-move shadow-md transition-opacity duration-200 z-20 ${showControls ? 'opacity-100' : 'opacity-0'}`}
+          className={`absolute -top-10 left-1/2 -translate-x-1/2 p-2 sm:p-1.5 bg-indigo-600 text-white rounded-lg cursor-move shadow-md transition-opacity duration-200 z-20 ${!isExporting && showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
           style={{ touchAction: 'none' }}
           onPointerDown={(e) => {
             e.stopPropagation();
@@ -959,21 +1042,21 @@ function FloatingCircleComponent({
             window.addEventListener('pointerup', onPointerUp);
           }}
         >
-          <Move size={14} />
+          <Move size={18} className="sm:w-3.5 sm:h-3.5" />
         </div>
 
         {/* Delete Button */}
         <button
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => { e.stopPropagation(); onDelete(); }}
-          className={`absolute -top-3 -right-3 p-1 bg-white border border-gray-200 rounded-full text-red-500 transition-all duration-200 shadow-md hover:bg-red-50 hover:text-red-600 z-30 ${showControls ? 'opacity-100 scale-100' : 'opacity-0 scale-75 pointer-events-none'}`}
+          className={`absolute -top-4 -right-4 p-2 sm:p-1 bg-white border border-gray-200 rounded-full text-red-500 transition-all duration-200 shadow-md hover:bg-red-50 hover:text-red-600 z-30 ${!isExporting && showControls ? 'opacity-100 scale-100' : 'opacity-0 scale-75 pointer-events-none'}`}
         >
-          <Trash2 size={12} />
+          <Trash2 size={16} className="sm:w-3 sm:h-3" />
         </button>
 
         {/* Resize Handle */}
         <div 
-          className={`absolute -bottom-3 -left-3 w-6 h-6 bg-white border border-gray-300 rounded-full cursor-nwse-resize transition-all duration-200 shadow-md z-30 flex items-center justify-center ${showControls ? 'opacity-100 scale-100' : 'opacity-0 scale-75 pointer-events-none'}`}
+          className={`absolute -bottom-4 -left-4 w-8 h-8 sm:w-6 sm:h-6 bg-white border border-gray-300 rounded-full cursor-nwse-resize transition-all duration-200 shadow-md z-30 flex items-center justify-center ${!isExporting && showControls ? 'opacity-100 scale-100' : 'opacity-0 scale-75 pointer-events-none'}`}
           style={{ touchAction: 'none' }}
           onPointerDown={(e) => {
             e.stopPropagation();
